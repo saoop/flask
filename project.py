@@ -214,8 +214,17 @@ def personal_area(who):
             if current_user and who == User.query.filter_by(username=current_user['username']).first().username :
                 return redirect('/personal_area/me')
             user = User.query.filter_by(username=who).first()
-            return render_template('personal_area.html', user=user,
+            if not current_user:
+                return render_template('personal_area.html', user=user,
                                    img='/static/pictures_avatar/' + user['avatar'], current_user=current_user)
+            user2 = User.query.filter_by(username=current_user.username).first()
+            if Subscribe.query.filter_by(subscribe_username=user.username, user_id=user2.id).first() in user2.subscribes:
+                unsubscribe = True
+            else:
+                unsubscribe = False
+
+            return render_template('personal_area.html', user=user,
+                                   img='/static/pictures_avatar/' + user['avatar'], current_user=current_user, unsubscribe=unsubscribe)
 
 
 db.create_all()
