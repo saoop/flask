@@ -2,7 +2,6 @@ from flask_sqlalchemy import SQLAlchemy
 from flask import Flask, render_template, request, redirect, url_for
 from PIL import Image
 import io
-import os
 
 
 app = Flask(__name__)
@@ -45,6 +44,7 @@ class Blog(db.Model):
     picture = db.Column(db.String, unique=False, nullable=True)
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
     user = db.relationship('User', backref=db.backref('blogs', lazy=True))
+    likes = db.Column(db.Integer, unique=False, nullable=True, default=0)
 
     def __repr__(self):
         return '<Blog {} {} {} {}>'.format(self.id, self.header, self.text, self.user_id)
@@ -60,9 +60,30 @@ class Blog(db.Model):
             return self.user_id
 
 
-class LikeComment(db.Model):
-    __tablename__ = 'likecomment'
+class Liked(db.Model):
+    __tablename__ = 'liked'
     id = db.Column(db.Integer, primary_key=True)
+    blog_id = db.Column(db.Integer, unique=False, nullable=False)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    user = db.relationship('User', backref=db.backref('liked'), lazy=True)
+
+    def __repr__(self):
+        return '<Like id: {} user_id: {} blog_id: {}>'.format(self.id, self.user_id, self.blog_id)
+
+    def __getitem__(self, item):
+        if item == 'id':
+            return self.id
+
+
+class Subscribe(db.Model):
+    __tablename__ = 'subscribe'
+    id = db.Column(db.Integer, primary_key=True)
+    subscribe_username = db.Column(db.String, unique=False, nullable=False)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    user = db.relationship('User', backref=db.backref('subscribes', lazy=True))
+
+    def __repr__(self):
+        return '<Subscribe id: {} subscriber: {} subscribe to : {}>'.format(self.id, self.user, self.subscribe_username)
 
 
 @app.route('/sign_in', methods=['GET', 'POST'])
@@ -109,6 +130,7 @@ def sign_up():
             db.session.add(user)
             db.session.commit()
             current_user = user
+            print(current_user)   # НЕ СТИРАТЬ!!! БЕЗ ЭТОГО НЕ РАБОТАЕТ, Я НЕ ЗНАЮ ПОЧЕМУ
 
             return redirect('/')
         return render_template('sign_up.html', message='Such username or email is already taken')
@@ -131,6 +153,36 @@ def create_blog():
 @app.route('/')
 def start():
     return redirect('/main')
+
+
+"""ЗАВЕРШИТЬ ПОЗЖЕ"""
+
+
+@app.route('/blog/<int:blog_id>', methods=['POST', 'GET'])
+def blog(blog_id):
+    blog = Blog.query.filter_by(id=blog_id).first()
+    user = User.query.filter_by(id=1).first()
+    blog.likes.append()
+    db.session.commit()
+    print(blog.likes)
+
+
+@app.route('/subscribe/<string:username>', methods=['GET', 'POST'])
+def subscribe(username):
+    subscriber = User.query.filter_by(username=current_user.username).first()
+    sub = Subscribe(subscribe_username=username)
+    subscriber.subscribes.append(sub)
+    db.session.commit()
+    return redirect('/personal_area/' + username)
+
+
+@app.route('/unsubscribe/<string:username>', methods=['GET', 'POST'])
+def unsubscribe(username):
+    subscriber = User.query.filter_by(username=current_user.username).first()
+    sub = Subscribe.query.filter_by(subscribe_username=username, user_id=subscriber.id).first()
+    db.session.delete(sub)
+    db.session.commit()
+    return redirect('/personal_area/' + username)
 
 
 @app.route('/main')
@@ -159,8 +211,11 @@ def personal_area(who):
         return redirect('/sign_in')
     else:
         if request.method == 'GET':
+            if current_user and who == User.query.filter_by(username=current_user['username']).first().username :
+                return redirect('/personal_area/me')
             user = User.query.filter_by(username=who).first()
-            return render_template('personal_area.html', user=user, img='/static/pictures_avatar/' + user['avatar'])
+            return render_template('personal_area.html', user=user,
+                                   img='/static/pictures_avatar/' + user['avatar'], current_user=current_user)
 
 
 db.create_all()
