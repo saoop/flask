@@ -2,7 +2,6 @@ from flask_sqlalchemy import SQLAlchemy
 from flask import Flask, render_template, request, redirect, url_for
 from PIL import Image
 import io
-
 import os
 
 
@@ -59,6 +58,11 @@ class Blog(db.Model):
             return self.text
         elif item == 'user_id':
             return self.user_id
+
+
+class LikeComment(db.Model):
+    __tablename__ = 'likecomment'
+    id = db.Column(db.Integer, primary_key=True)
 
 
 @app.route('/sign_in', methods=['GET', 'POST'])
@@ -134,22 +138,29 @@ def main():
     return render_template('main.html', blogs=Blog.query.all()[-1::-1], all_users=User.query)
 
 
-@app.route('/personal_area', methods=['GET', 'POST'])
-def personal_area():
-    if current_user != None:
+@app.route('/personal_area/<string:who>', methods=['GET', 'POST'])
+def personal_area(who):
+    if who == 'me':
+        if current_user != None:
+            if request.method == 'GET':
+                user = User.query.filter_by(username=current_user['username']).first()
+                return render_template('personal_area.html', user=user,
+                                       img='/static/pictures_avatar/' + user['avatar'], isMe=True)
+
+            elif request.method == 'POST':
+                user = User.query.filter_by(username=current_user['username']).first()
+                f_data = request.files.get('photo')
+
+                f = Image.open(io.BytesIO(f_data.read()))
+                f.save('static/pictures_avatar/' + user['username'] + '.PNG', 'PNG')
+                return render_template('personal_area.html', user=user,
+                                       img='/static/pictures_avatar/' + user['avatar'], isMe=True)
+
+        return redirect('/sign_in')
+    else:
         if request.method == 'GET':
-            user = User.query.filter_by(username=current_user['username']).first()
-            return render_template('personal_area.html', user=user, img='static/pictures_avatar/' + user['avatar'])
-
-        elif request.method == 'POST':
-            user = User.query.filter_by(username=current_user['username']).first()
-            f_data = request.files.get('photo')
-
-            f = Image.open(io.BytesIO(f_data.read()))
-            f.save('static/pictures_avatar/' + user['username'] + '.PNG', 'PNG')
-            return render_template('personal_area.html', user=user, img='static/pictures_avatar/' + user['avatar'])
-
-    return redirect('/sign_in')
+            user = User.query.filter_by(username=who).first()
+            return render_template('personal_area.html', user=user, img='/static/pictures_avatar/' + user['avatar'])
 
 
 db.create_all()
