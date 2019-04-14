@@ -73,6 +73,10 @@ class Liked(db.Model):
     def __getitem__(self, item):
         if item == 'id':
             return self.id
+        elif item == 'blog_id':
+            return self.blog_id
+        elif item == 'user.id':
+            return self.user.id
 
 
 class Subscribe(db.Model):
@@ -130,7 +134,8 @@ def sign_up():
             db.session.add(user)
             db.session.commit()
             current_user = user
-            print(current_user)   # НЕ СТИРАТЬ!!! БЕЗ ЭТОГО НЕ РАБОТАЕТ, Я НЕ ЗНАЮ ПОЧЕМУ
+            print(current_user)   # НЕ СТИРАТЬ!!! БЕЗ ЭТОГО НЕ РАБОТАЕТ, Я НЕ ЗНАЮ ПОЧЕМУ, не работает,
+            # когда, создавая новый аккаунт, пытаюсь зайти в personal area
 
             return redirect('/')
         return render_template('sign_up.html', message='Such username or email is already taken')
@@ -158,13 +163,18 @@ def start():
 """ЗАВЕРШИТЬ ПОЗЖЕ"""
 
 
-@app.route('/blog/<int:blog_id>', methods=['POST', 'GET'])
-def blog(blog_id):
+@app.route('/like_blog/<int:blog_id>', methods=['POST', 'GET'])
+def like_blog(blog_id):
     blog = Blog.query.filter_by(id=blog_id).first()
-    user = User.query.filter_by(id=1).first()
-    blog.likes.append()
-    db.session.commit()
-    print(blog.likes)
+    if not current_user:
+        return redirect('/sign_in')
+    if request.args.get("vote"):
+        blog.likes += 1
+        user = User.query.filter_by(username=current_user.username).first()
+        like = Liked(blog_id=blog_id)
+        user.liked.append(like)
+        db.session.commit()
+        return redirect('/main')
 
 
 @app.route('/subscribe/<string:username>', methods=['GET', 'POST'])
