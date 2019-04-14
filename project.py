@@ -3,6 +3,8 @@ from flask import Flask, render_template, request, redirect, url_for
 from PIL import Image
 import io
 
+import os
+
 
 app = Flask(__name__)
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///data_base.db'
@@ -21,7 +23,7 @@ class User(db.Model):
     avatar = db.Column(db.String(80), unique=False, nullable=True)
 
     def __repr__(self):
-        return '<User {} {} {} {}>'.format(self.id, self.username, self.email, self.password)
+        return '<User {} {} {} {} {}>'.format(self.id, self.username, self.email, self.password, self.avatar)
 
     def __getitem__(self, item):
         if item == 'id':
@@ -32,6 +34,8 @@ class User(db.Model):
             return self.email
         elif item == 'password':
             return self.password
+        elif item == 'avatar':
+            return self.avatar
 
 
 class Blog(db.Model):
@@ -88,12 +92,16 @@ def sign_up():
                             )
                 f_data = request.files['photo'].read()
                 f = Image.open(io.BytesIO(f_data))
-                f.save('static/pictures_avatar' + request.form['username']+'.PNG', 'PNG')
+                f.save('static/pictures_avatar/' + request.form['username']+'.PNG', 'PNG')
 
             else:
                 user = User(username=request.form['username'],
                             email=request.form['email'],
-                            password=request.form['password'])
+                            password=request.form['password'],
+                            avatar=request.form['username'] + '.PNG'
+                            )
+                f = Image.open('standart_avatar.PNG')
+                f.save('static/pictures_avatar/' + request.form['username']+'.PNG', 'PNG')
             db.session.add(user)
             db.session.commit()
             current_user = user
@@ -113,16 +121,39 @@ def create_blog():
         user = User.query.filter_by(username=current_user['username']).first()
         user.blogs.append(blog)
         db.session.commit()
-        print(user.blogs)
         return redirect('/')
 
 
 @app.route('/')
+def start():
+    return redirect('/main')
+
+
+@app.route('/main')
 def main():
-    return 'Hello'
+    return render_template('main.html', blogs=Blog.query.all()[-1::-1], all_users=User.query)
+
+
+@app.route('/personal_area', methods=['GET', 'POST'])
+def personal_area():
+    if current_user != None:
+        if request.method == 'GET':
+            user = User.query.filter_by(username=current_user['username']).first()
+            return render_template('personal_area.html', user=user, img='static/pictures_avatar/' + user['avatar'])
+
+        elif request.method == 'POST':
+            user = User.query.filter_by(username=current_user['username']).first()
+            f_data = request.files.get('photo')
+
+            f = Image.open(io.BytesIO(f_data.read()))
+            f.save('static/pictures_avatar/' + user['username'] + '.PNG', 'PNG')
+            return render_template('personal_area.html', user=user, img='static/pictures_avatar/' + user['avatar'])
+
+    return redirect('/sign_in')
 
 
 db.create_all()
+
 
 if __name__ == '__main__':
     app.run(port=8080, host='127.0.0.1')
