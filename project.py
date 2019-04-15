@@ -58,6 +58,8 @@ class Blog(db.Model):
             return self.text
         elif item == 'user_id':
             return self.user_id
+        elif item == 'picture':
+            return self.picture
 
 
 class Liked(db.Model):
@@ -146,13 +148,30 @@ def create_blog():
     if request.method == 'GET':
         return render_template('create_blog.html')
     elif request.method == 'POST':
-        blog = Blog(header=request.form['header'],
-                    text=request.form['text'],
-                    )
-        user = User.query.filter_by(username=current_user['username']).first()
-        user.blogs.append(blog)
-        db.session.commit()
-        return redirect('/')
+        if not request.files.get('picture'):
+
+            blog = Blog(header=request.form['header'],
+                        text=request.form['text'],
+                        )
+            user = User.query.filter_by(username=current_user['username']).first()
+            user.blogs.append(blog)
+            db.session.commit()
+            return redirect('/')
+        else:
+            blog = Blog(header=request.form['header'],
+                        text=request.form['text'],
+                        )
+
+            user = User.query.filter_by(username=current_user['username']).first()
+            user.blogs.append(blog)
+            db.session.commit()
+            blog.picture = str(blog['id']) + '.PNG'
+
+            f_data = request.files.get('picture')
+            f = Image.open(io.BytesIO(f_data.read()))
+            f.save('static/pictures_blogs/' + blog.picture, 'PNG')
+            db.session.commit()
+            return redirect('/')
 
 
 @app.route('/')
@@ -163,18 +182,54 @@ def start():
 """ЗАВЕРШИТЬ ПОЗЖЕ"""
 
 
-@app.route('/like_blog/<int:blog_id>', methods=['POST', 'GET'])
-def like_blog(blog_id):
+def like_blog(blog_id, where, username=None):
     blog = Blog.query.filter_by(id=blog_id).first()
     if not current_user:
         return redirect('/sign_in')
-    if request.args.get("vote"):
-        blog.likes += 1
+    if request.args.get('vote'):
         user = User.query.filter_by(username=current_user.username).first()
+        my_like = Liked.query.filter_by(user_id=user.id, blog_id=blog_id).first()
+
+        if my_like:
+            blog.likes -= 1
+            db.session.delete(my_like)
+            db.session.commit()
+            if username:
+                return redirect('/' + where + '/' + username[0])
+            return redirect('/' + where)
         like = Liked(blog_id=blog_id)
         user.liked.append(like)
+        blog.likes += 1
         db.session.commit()
-        return redirect('/main')
+        if username:
+            return redirect('/' + where + '/' + username[0])
+        return redirect('/' + where)
+
+
+@app.route('/like_blog/<string:where>/<int:blog_id>', methods=['POST', 'GET'])
+@app.route('/like_blog/<string:where>/<string:username>/<int:blog_id>', methods=['POST', 'GET'])
+def like_blog(blog_id, where, username=None):
+    blog = Blog.query.filter_by(id=blog_id).first()
+    if not current_user:
+        return redirect('/sign_in')
+    if request.args.get('vote'):
+        user = User.query.filter_by(username=current_user.username).first()
+        my_like = Liked.query.filter_by(user_id=user.id, blog_id=blog_id).first()
+
+        if my_like:
+            blog.likes -= 1
+            db.session.delete(my_like)
+            db.session.commit()
+            if username:
+                return redirect('/' + where + '/' + username)
+            return redirect('/' + where)
+        like = Liked(blog_id=blog_id)
+        user.liked.append(like)
+        blog.likes += 1
+        db.session.commit()
+        if username:
+            return redirect('/' + where + '/' + username)
+        return redirect('/' + where)
 
 
 @app.route('/subscribe/<string:username>', methods=['GET', 'POST'])
@@ -207,7 +262,7 @@ def personal_area(who):
             if request.method == 'GET':
                 user = User.query.filter_by(username=current_user['username']).first()
                 return render_template('personal_area.html', user=user,
-                                       img='/static/pictures_avatar/' + user['avatar'], isMe=True)
+                                       img='/static/pictures_avatar/' + user['avatar'], isMe=True, liked=user.liked)
 
             elif request.method == 'POST':
                 user = User.query.filter_by(username=current_user['username']).first()
@@ -216,17 +271,20 @@ def personal_area(who):
                 f = Image.open(io.BytesIO(f_data.read()))
                 f.save('static/pictures_avatar/' + user['username'] + '.PNG', 'PNG')
                 return render_template('personal_area.html', user=user,
-                                       img='/static/pictures_avatar/' + user['avatar'], isMe=True)
+                                       img='/static/pictures_avatar/' + user['avatar'], isMe=True, liked=user.liked)
 
         return redirect('/sign_in')
     else:
         if request.method == 'GET':
-            if current_user and who == User.query.filter_by(username=current_user['username']).first().username :
+            # перенос на личный профиль
+            if current_user and who == User.query.filter_by(username=current_user['username']).first().username:
                 return redirect('/personal_area/me')
+
             user = User.query.filter_by(username=who).first()
+
             if not current_user:
                 return render_template('personal_area.html', user=user,
-                                   img='/static/pictures_avatar/' + user['avatar'], current_user=current_user)
+                                   img='/static/pictures_avatar/' + user['avatar'], current_user=current_user, liked=user.liked)
             user2 = User.query.filter_by(username=current_user.username).first()
             if Subscribe.query.filter_by(subscribe_username=user.username, user_id=user2.id).first() in user2.subscribes:
                 unsubscribe = True
@@ -234,7 +292,7 @@ def personal_area(who):
                 unsubscribe = False
 
             return render_template('personal_area.html', user=user,
-                                   img='/static/pictures_avatar/' + user['avatar'], current_user=current_user, unsubscribe=unsubscribe)
+                                   img='/static/pictures_avatar/' + user['avatar'], current_user=current_user, unsubscribe=unsubscribe, liked=user.liked)
 
 
 db.create_all()
