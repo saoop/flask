@@ -2,6 +2,8 @@ from flask_sqlalchemy import SQLAlchemy
 from flask import Flask, render_template, request, redirect, url_for
 from PIL import Image
 import io
+import datetime
+import os
 
 
 app = Flask(__name__)
@@ -264,20 +266,29 @@ def personal_area(who):
 
             if request.method == 'GET':
                 user = User.query.filter_by(username=current_user['username']).first()
-                for like in user.liked:
-                    print(Blog.query.filter_by(id=like.blog_id).first())
+
                 return render_template('personal_area.html', user=user,
                                        img='/static/pictures_avatar/' + user['avatar'], isMe=True, liked=user.liked, Blog=Blog)
 
             elif request.method == 'POST':
+
                 user = User.query.filter_by(username=current_user['username']).first()
-                f_data = request.files.get('photo')
+                if request.files.get('photo'):
+                    f_data = request.files.get('photo')
 
-                f = Image.open(io.BytesIO(f_data.read()))
-                f.save('static/pictures_avatar/' + user['username'] + '.PNG', 'PNG')
+                    f = Image.open(io.BytesIO(f_data.read()))
+
+                    old_avatar = user.avatar
+
+                    date = datetime.datetime.today().strftime("%Y-%m-%d,%H_%M_%S")
+                    user.avatar = user['username'] + date + '.PNG'
+                    db.session.commit()
+                    f.save('static/pictures_avatar/' + user['avatar'], 'PNG')
+                    os.remove('static/pictures_avatar/' + old_avatar)
+                    return render_template('personal_area.html', user=user,
+                                           img='/static/pictures_avatar/' + user['avatar'], isMe=True, liked=user.liked, Blog=Blog)
                 return render_template('personal_area.html', user=user,
-                                       img='/static/pictures_avatar/' + user['avatar'], isMe=True, liked=user.liked, Blog=Blog)
-
+                                           img='/static/pictures_avatar/' + user['avatar'], isMe=True, liked=user.liked, Blog=Blog)
         return redirect('/sign_in')
     else:
         if request.method == 'GET':
