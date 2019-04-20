@@ -259,16 +259,17 @@ def main():
 
 
 @app.route('/personal_area/<string:who>', methods=['GET', 'POST'])
-def personal_area(who):
+@app.route('/personal_area/<string:islikedblogs>/<string:who>', methods=['GET', 'POST'])
+def personal_area(who, islikedblogs=''):
     if who == 'me':
 
         if current_user != None:
-
             if request.method == 'GET':
                 user = User.query.filter_by(username=current_user['username']).first()
 
                 return render_template('personal_area.html', user=user,
-                                       img='/static/pictures_avatar/' + user['avatar'], isMe=True, liked=user.liked, Blog=Blog)
+                                       img='/static/pictures_avatar/' + user['avatar'], isMe=True, liked=user.liked,
+                                       Blog=Blog, isLikedBlogs=islikedblogs)
 
             elif request.method == 'POST':
 
@@ -286,9 +287,11 @@ def personal_area(who):
                     f.save('static/pictures_avatar/' + user['avatar'], 'PNG')
                     os.remove('static/pictures_avatar/' + old_avatar)
                     return render_template('personal_area.html', user=user,
-                                           img='/static/pictures_avatar/' + user['avatar'], isMe=True, liked=user.liked, Blog=Blog)
+                                           img='/static/pictures_avatar/' + user['avatar'], isMe=True,
+                                           liked=user.liked, Blog=Blog, isLikedBlogs=islikedblogs)
                 return render_template('personal_area.html', user=user,
-                                           img='/static/pictures_avatar/' + user['avatar'], isMe=True, liked=user.liked, Blog=Blog)
+                                           img='/static/pictures_avatar/' + user['avatar'], isMe=True,
+                                       liked=user.liked, Blog=Blog, isLikedBlogs=islikedblogs)
         return redirect('/sign_in')
     else:
         if request.method == 'GET':
@@ -300,7 +303,8 @@ def personal_area(who):
 
             if not current_user:
                 return render_template('personal_area.html', user=user,
-                                   img='/static/pictures_avatar/' + user['avatar'], current_user=current_user, liked=user.liked, Blog=Blog)
+                                   img='/static/pictures_avatar/' + user['avatar'], current_user=current_user,
+                                       liked=user.liked, Blog=Blog, isLikedBlogs=islikedblogs)
             user2 = User.query.filter_by(username=current_user.username).first()
             if Subscribe.query.filter_by(subscribe_username=user.username, user_id=user2.id).first() in user2.subscribes:
                 unsubscribe = True
@@ -308,7 +312,8 @@ def personal_area(who):
                 unsubscribe = False
 
             return render_template('personal_area.html', user=user,
-                                   img='/static/pictures_avatar/' + user['avatar'], current_user=current_user, unsubscribe=unsubscribe, liked=user.liked, Blog=Blog)
+                                   img='/static/pictures_avatar/' + user['avatar'], current_user=current_user,
+                                   unsubscribe=unsubscribe, liked=user.liked, Blog=Blog, isLikedBlogs=islikedblogs)
 
 
 db.create_all()
