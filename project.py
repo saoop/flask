@@ -276,8 +276,10 @@ def personal_area(who, islikedblogs=''):
                 user = User.query.filter_by(username=current_user['username']).first()
                 if request.files.get('photo'):
                     f_data = request.files.get('photo')
-
-                    f = Image.open(io.BytesIO(f_data.read()))
+                    try:
+                        f = Image.open(io.BytesIO(f_data.read()))
+                    except Exception:
+                        return redirect('personal_area/me')
 
                     old_avatar = user.avatar
 
