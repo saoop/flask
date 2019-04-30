@@ -1,0 +1,77 @@
+{% extends "base.html" %}
+{% block content %}
+    <div class="d-flex justify-content-between">
+        <div class="float-left">
+            {% if isMe == True %}
+                <h1>Welcome, {{user['username']}}</h1>
+            {% else %}
+                <h1>{{user['username']}}'s profile</h1>
+                {% if current_user %}
+                    {% if not unsubscribe %}
+                    <a class="btn btn-secondary btn-lg active" role="button" aria-pressed="true" href="/subscribe/{{user.username}}">Subscribe</a>
+                    {% else %}
+                    <a class="btn btn-secondary btn-lg active" role="button" aria-pressed="true" href="/unsubscribe/{{user.username}}">Unsubscribe</a>
+                    {% endif %}
+                {% endif %}
+            {% endif %}
+            <img src={{img}} alt='You can upload photo' width="200" height="235">
+            {% if isMe == True %}
+                <form method="POST" enctype="multipart/form-data">
+                    <div class="form-group">
+                        <label for="photo">Select your photo</label>
+                        <input type="file" class="form-control-file" id="photo" name="photo" placeholder="Choose file">
+                    </div>
+                    <button type="submit" class="btn btn-primary">Change</button>
+                </form>
+            {% endif %}
+            <h3>Subscribes</h3>
+            {% for sub in user.subscribes %}
+                <a class="btn btn-secondary btn-lg active" role="button" aria-pressed="true" href="/personal_area/{{sub.subscribe_username}}">{{sub.subscribe_username}}</a>
+            {% endfor %}
+        </div>
+        <div class="float-right">
+                {% if isMe%}
+                    <nav class="navbar navbar-light bg-light">
+                        <a class="navbar-brand" href="/personal_area/liked/me">Liked</a>
+                        <a class="navbar-brand" href="/personal_area/me">My blogs</a>
+                    </nav>
+                {% endif %}
+
+                {% if isMe and not isLikedBlogs%}
+                    <a href="/create_blog">Create new blog</a>
+                    <h2>My blogs</h2>
+                {% endif %}
+                {% if not isMe%}
+                    <h2>{{user['username']}}' blogs</h2>
+                {% endif %}
+
+                {% if isMe and not isLikedBlogs or not isMe%}
+                    {% for blog in user.blogs[-1::-1] %}
+                        <div class="alert alert-dark">
+                            <p class="font-weight-bold">{{blog.header}}</p>
+                            <p class="text-justify">{{blog.text}}</p>
+                            <a href="/like_blog/personal_area/{{user.username}}/{{blog.id}}?vote=1"><i class="fa fa-thumbs-up"></i> : {{blog.likes}}</a>
+                            {% if blog.picture != None %}
+                                <img src="/static/pictures_blogs/{{blog.picture}}" alt = 'Here should be a picture'>
+                            {% endif %}
+                        </div>
+                    {% endfor %}
+                {% endif %}
+
+                {% if isMe and isLikedBlogs%}
+                <h3>Liked blogs</h3>
+                {% for like in liked[-1::-1] %}
+                    <div class="alert alert-dark">
+                        <p class="font-weight-bold">{{Blog.query.filter_by(id=like.blog_id).first().header}}</p>
+                        <p class="text-justify">{{Blog.query.filter_by(id=like.blog_id).first().text}}</p>
+                        <a href="/like_blog/personal_area/{{user.username}}/{{Blog.query.filter_by(id=like.blog_id).first().id}}?vote=1"><i class="fa fa-thumbs-up"></i> : {{Blog.query.filter_by(id=like.blog_id).first().likes}}</a>
+                        {% if Blog.query.filter_by(id=like.blog_id).first().picture != None %}
+                            <img src="/static/pictures_blogs/{{Blog.query.filter_by(id=like.blog_id).first().picture}}" alt = 'Here should be a picture'>
+                        {% endif %}
+                    </div>
+                {% endfor %}
+                {% endif %}
+
+        </div>
+    </div>
+{% endblock %}

@@ -1,0 +1,15 @@
+{% extends "base.html" %}
+
+{% block content %}
+{% for blog in blogs %}
+    <div class="alert alert-dark">
+        <p class="font-weight-bold">{{blog.header}}</p>
+        <p class="text-justify">{{blog.text}}</p>
+        <p class=text-justify">Author: <a href="/personal_area/{{all_users.filter_by(id=blog.user_id).first()['username']}}">{{all_users.filter_by(id=blog.user_id).first()['username']}}</a></p>
+        <a href="/like_blog/main/{{ blog.id }}?vote=1"><i class="fa fa-thumbs-up"></i> : {{blog.likes}}</a>
+        {% if blog.picture != None %}
+            <img src="/static/pictures_blogs/{{blog.picture}}" alt = 'Here should be a picture'>
+        {% endif %}
+    </div>
+{% endfor %}
+{% endblock %}

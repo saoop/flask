@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>{{title}}</title>
+    <meta name="viewport"
+          content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <link rel="stylesheet"
+          href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css"
+          integrity="sha384-Gn5384xqQ1aoWXA+058RXPxPg6fy4IWvTNh0E263XmFcJlSAwiGgFAW/dAiS6JXm"
+          crossorigin="anonymous">
+    <link href="https://maxcdn.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css" rel="stylesheet" >
+
+</head>
+<body>
+    <main role="main" class="container">
+        <header>
+            <nav class="navbar navbar-light bg-light">
+                <a class="navbar-brand" href="/main" role="button">MAIN PAGE</a>
+                <a class="navbar-brand" href="/personal_area/me" role="button">PERSONAL AREA</a>
+                <a class="navbar-brand" href="/sign_up" role="button">SIGN UP</a>
+                <a class="navbar-brand" href="/sign_in" role="button">SIGN IN</a>
+            </nav>
+        </header>
+        {% block content %}{% endblock %}
+    </main>
+</body>
+</html>

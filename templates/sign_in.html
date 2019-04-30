@@ -1,0 +1,20 @@
+{% extends  "base.html" %}
+
+{% block content %}
+    <form method="POST">
+        <div class="form-group">
+            <i class="fa fa-user-circle"></i>
+            <label for="username">Username</label>
+            <input type="text" id="username" name="username" class="form-control" placeholder="Name">
+        </div>
+        <div class="form-group">
+            <i class="fa fa-lock"></i>
+            <label for="password">Password</label>
+            <input type="password" id="password" name="password" class="form-control" placeholder="Password">
+        </div>
+        <button type="submit" class="btn btn-primary">Sign in</button>
+        {% if message != None %}
+        <div>{{message}}</div>
+        {% endif %}
+    </form>
+{% endblock %}
